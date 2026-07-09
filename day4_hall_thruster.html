@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Hall-Effect Thruster Simulator</title>
+<style>
+  :root{--bg:#0b0e14;--panel:#141924;--panel2:#1b2230;--line:#2a3344;--text:#e8edf5;--muted:#8a94a6;
+    --accent:#9d5cff;--accent2:#3ddc97;--warn:#ffb020;--blue:#4d9eff;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;max-width:480px;margin:0 auto;overflow-x:hidden;}
+  .wrap{padding:12px 12px 40px;}
+  header{padding:14px 4px 10px;}
+  h1{font-size:17px;margin:0 0 2px;font-weight:700;}
+  .sub{font-size:11.5px;color:var(--muted);line-height:1.4;}
+  .badge{display:inline-block;background:var(--accent);color:#fff;font-size:10px;font-weight:700;
+    padding:2px 7px;border-radius:20px;margin-bottom:6px;letter-spacing:.4px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;}
+  .card h2{font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 12px;}
+  .row{margin-bottom:14px;} .row:last-child{margin-bottom:0;}
+  .rowhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+  .rowhead label{font-size:13px;font-weight:500;}
+  .rowhead .val{font-size:13px;color:var(--accent2);font-weight:700;font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;height:34px;-webkit-appearance:none;background:transparent;}
+  input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;
+    background:linear-gradient(90deg,var(--accent),var(--line));}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;height:20px;width:20px;border-radius:50%;
+    background:#fff;border:3px solid var(--accent);margin-top:-8px;}
+  .hint{font-size:10.5px;color:var(--muted);margin-top:3px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .metric{background:var(--panel2);border-radius:10px;padding:10px 10px 9px;border:1px solid var(--line);}
+  .metric .m-label{font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;}
+  .metric .m-value{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;}
+  .metric .m-unit{font-size:10.5px;color:var(--muted);margin-left:2px;}
+  .metric.hi .m-value{color:var(--accent);} .metric.ok .m-value{color:var(--accent2);} .metric.warn .m-value{color:var(--warn);}
+  .result{border-radius:12px;padding:14px;text-align:center;font-weight:800;font-size:14px;margin-bottom:4px;}
+  .result.ok{background:rgba(61,220,151,.12);border:1px solid rgba(61,220,151,.4);color:var(--accent2);}
+  .result.bad{background:rgba(255,176,32,.12);border:1px solid rgba(255,176,32,.4);color:var(--warn);}
+  canvas{width:100%;display:block;background:var(--panel2);border-radius:10px;border:1px solid var(--line);}
+  .legend{display:flex;gap:14px;font-size:10.5px;color:var(--muted);margin-top:8px;flex-wrap:wrap;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .costtable{width:100%;border-collapse:collapse;font-size:12px;}
+  .costtable td{padding:6px 2px;border-bottom:1px solid var(--line);}
+  .costtable td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;}
+  .costtable tr.total td{border-top:2px solid var(--line);border-bottom:none;font-weight:800;color:var(--accent2);padding-top:9px;}
+  .note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
+  .history{background:rgba(157,92,255,.1);border:1px solid rgba(157,92,255,.35);border-radius:10px;padding:10px;
+    font-size:11.5px;color:#dcc8ff;line-height:1.55;}
+  footer{text-align:center;font-size:10px;color:var(--muted);padding:16px 4px 4px;line-height:1.8;}
+  footer a{color:var(--accent);text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="badge">DAY 4 · AEROSPACE SERIES</span>
+    <h1>Xenon Hall-Effect Thruster Simulator</h1>
+    <div class="sub">Electric propulsion — crossed E×B field ionizes and accelerates xenon. High Isp, milli-Newton thrust. Fit it inside your satellite's power budget and hit the orbit-raise target.</div>
+  </header>
+
+  <div class="card">
+    <h2>📅 Space history — this date</h2>
+    <div class="history"><b>December 21, 1971</b> — the Soviet Meteor satellite carried the first operational Hall-effect thruster (SPT-50) to orbit, beginning five decades of electric-propulsion flight heritage that today powers Starlink, GSAT, and most modern GEO comsats.</div>
+  </div>
+
+  <div class="card">
+    <h2>⚙ Thruster + mission inputs</h2>
+    <div class="row">
+      <div class="rowhead"><label>Discharge (acceleration) voltage</label><span class="val" id="v_volt">300 V</span></div>
+      <input type="range" id="volt" min="150" max="600" step="10" value="300">
+    </div>
+    <div class="row">
+      <div class="rowhead"><label>Xenon mass flow rate</label><span class="val" id="v_mdot">2.5 mg/s</span></div>
+      <input type="range" id="mdot" min="0.5" max="6" step="0.1" value="2.5">
+    </div>
+    <div class="row">
+      <div class="rowhead"><label>Available spacecraft power budget</label><span class="val" id="v_power">300 W</span></div>
+      <input type="range" id="power" min="80" max="1200" step="10" value="300">
+      <div class="hint">Typical: 80–200 W (6U CubeSat), 300–600 W (ESPA-class smallsat), 1000+ W (GEO comsat)</div>
+    </div>
+    <div class="row">
+      <div class="rowhead"><label>Spacecraft wet mass</label><span class="val" id="v_mass">180 kg</span></div>
+      <input type="range" id="mass" min="12" max="2000" step="2" value="180">
+    </div>
+    <div class="row">
+      <div class="rowhead"><label>Xenon propellant load</label><span class="val" id="v_prop">8.0 kg</span></div>
+      <input type="range" id="prop" min="0.3" max="150" step="0.1" value="8.0">
+    </div>
+    <div class="row">
+      <div class="rowhead"><label>Mission ΔV target</label><span class="val" id="v_dv">400 m/s</span></div>
+      <input type="range" id="dv" min="20" max="2000" step="10" value="400">
+      <div class="hint">e.g. LEO drag makeup ≈ 20–100 m/s/yr, LEO→higher-LEO raise ≈ 300–600 m/s, GEO stationkeeping ≈ 50 m/s/yr</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🔥 Live thruster performance</h2>
+    <div class="grid2">
+      <div class="metric hi"><div class="m-label">Thrust</div><div class="m-value" id="o_thrust">–</div><span class="m-unit">mN</span></div>
+      <div class="metric ok"><div class="m-label">Specific impulse</div><div class="m-value" id="o_isp">–</div><span class="m-unit">s</span></div>
+      <div class="metric"><div class="m-label">Exhaust velocity</div><div class="m-value" id="o_ve">–</div><span class="m-unit">km/s</span></div>
+      <div class="metric"><div class="m-label">Beam current</div><div class="m-value" id="o_current">–</div><span class="m-unit">A</span></div>
+      <div class="metric warn"><div class="m-label">Power required</div><div class="m-value" id="o_powerneed">–</div><span class="m-unit">W</span></div>
+      <div class="metric"><div class="m-label">Thrust/power</div><div class="m-value" id="o_tpr">–</div><span class="m-unit">mN/kW</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="result" id="resultBox"></div>
+  </div>
+
+  <div class="card">
+    <h2>📈 ΔV accumulation over mission time</h2>
+    <canvas id="chart" width="440" height="210"></canvas>
+    <div class="legend"><span><i class="dot" style="background:#9d5cff"></i>ΔV achieved (m/s)</span></div>
+  </div>
+
+  <div class="card">
+    <h2>📊 Mission summary</h2>
+    <div class="grid2">
+      <div class="metric"><div class="m-label">Time to target ΔV</div><div class="m-value" id="s_time">–</div><span class="m-unit">days</span></div>
+      <div class="metric"><div class="m-label">Propellant needed</div><div class="m-value" id="s_propneed">–</div><span class="m-unit">kg</span></div>
+      <div class="metric"><div class="m-label">Max deliverable ΔV</div><div class="m-value" id="s_maxdv">–</div><span class="m-unit">m/s</span></div>
+      <div class="metric"><div class="m-label">Duty cycle at this power</div><div class="m-value" id="s_duty">–</div><span class="m-unit">%</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>💰 Estimated cost — this configuration</h2>
+    <table class="costtable" id="costtable"></table>
+    <div class="note">Rates: xenon propellant ₹1,50,000/kg (2026 industrial spot, ₹95,000–2,50,000/kg range per purity/region — see paper), PPU (power processing unit) scaled with power budget, thruster head + cathode + xenon tank flat costs. Full flight-qualification breakdown in the research paper.</div>
+  </div>
+
+  <footer>
+    Educational scaling-law model (energy-limited ion acceleration, fixed 55% overall efficiency). Not a validated plasma-physics PIC simulation.<br>
+    © 2026 Mayank Swaraj · Mayank Creations · Daily AeroSpace Series — Day 4<br>
+    <a href="https://www.linkedin.com/in/mayank-swaraj-4b84b6410" target="_blank">LinkedIn</a> ·
+    <a href="https://github.com/mayankswaraj18cr-cmd" target="_blank">GitHub</a>
+  </footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const map={volt:'v_volt',mdot:'v_mdot',power:'v_power',mass:'v_mass',prop:'v_prop',dv:'v_dv'};
+const fmt={volt:v=>v.toFixed(0)+' V',mdot:v=>v.toFixed(1)+' mg/s',power:v=>v.toFixed(0)+' W',
+  mass:v=>v.toFixed(0)+' kg',prop:v=>v.toFixed(1)+' kg',dv:v=>v.toFixed(0)+' m/s'};
+Object.keys(map).forEach(id=>{ $(id).addEventListener('input',()=>{ $(map[id]).textContent=fmt[id](parseFloat($(id).value)); simulate(); }); });
+
+const Q=1.602e-19, M_ION=2.1801e-25; // xenon ion mass, kg
+const G0=9.81, ETA=0.55; // overall thruster efficiency (ionization+beam divergence+electrical)
+
+function simulate(){
+  const V=parseFloat($('volt').value);
+  const mdot=parseFloat($('mdot').value)/1e6; // kg/s
+  const powerBudget=parseFloat($('power').value);
+  const dryPlusWet=parseFloat($('mass').value);
+  const propLoad=parseFloat($('prop').value);
+  const dvTarget=parseFloat($('dv').value);
+
+  const Ve=Math.sqrt(2*Q*V/M_ION); // m/s, ideal ion exhaust velocity
+  const thrust=ETA*mdot*Ve; // N
+  const Isp=thrust/(mdot*G0);
+  const beamCurrent=mdot*Q/M_ION; // A (particle current)
+  const powerNeed=(beamCurrent*V)/ETA; // W, total electrical power for this mdot/V combo
+  const tpr=thrust/powerNeed*1e6; // mN per kW... thrust(N)/power(W)*1000(mN/N)*1000(W/kW)
+
+  $('o_thrust').textContent=(thrust*1000).toFixed(2);
+  $('o_isp').textContent=Isp.toFixed(0);
+  $('o_ve').textContent=(Ve/1000).toFixed(1);
+  $('o_current').textContent=beamCurrent.toFixed(2);
+  $('o_powerneed').textContent=powerNeed.toFixed(0);
+  $('o_tpr').textContent=tpr.toFixed(2);
+
+  const rb=$('resultBox');
+  const fits = powerNeed <= powerBudget;
+  const duty = Math.min(100, powerBudget/powerNeed*100);
+  if(fits){
+    rb.className='result ok';
+    rb.textContent=`✅ Fits power budget — thruster can run continuously`;
+  } else {
+    rb.className='result bad';
+    rb.textContent=`⚠ Exceeds power budget — duty cycle limited to ${duty.toFixed(0)}% (pulsed operation)`;
+  }
+
+  // effective mdot given duty-cycle limited operation
+  const effMdot = mdot*(duty/100);
+  const effThrust = thrust*(duty/100);
+  const dryMass = dryPlusWet - propLoad;
+
+  // time to reach target dV via effMdot, integrating Tsiolkovsky with mass depletion
+  let m=dryPlusWet, t=0, dtstep=3600*6; // 6-hour steps
+  const dvAccum=[]; const timeDays=[];
+  let dvSoFar=0, propUsed=0, reached=false, exhausted=false;
+  const maxSteps=4*365*4; // up to ~4 years at 6hr steps... cap reasonably
+  for(let i=0;i<2000;i++){
+    if(effMdot<=0){ break; }
+    const a = effThrust/m; // instantaneous accel
+    dvSoFar += a*dtstep;
+    const dm = effMdot*dtstep;
+    if(propUsed+dm >= propLoad){ exhausted=true; break; }
+    propUsed += dm; m -= dm; t += dtstep;
+    dvAccum.push(dvSoFar); timeDays.push(t/86400);
+    if(dvSoFar>=dvTarget){ reached=true; break; }
+  }
+
+  $('s_time').textContent = reached ? (t/86400).toFixed(1) : '—';
+  $('s_propneed').textContent = reached ? propUsed.toFixed(2) : '—';
+  $('s_maxdv').textContent = dvAccum.length ? dvAccum[dvAccum.length-1].toFixed(0) : '0';
+  $('s_duty').textContent = duty.toFixed(0);
+
+  drawChart(timeDays,dvAccum,dvTarget);
+  updateCost(propLoad,powerBudget);
+}
+
+function drawChart(ts,dvs,target){
+  const c=$('chart'); const ctx=c.getContext('2d'); const w=c.width,h=c.height;
+  ctx.clearRect(0,0,w,h);
+  if(ts.length<2){ ctx.fillStyle='#8a94a6'; ctx.font='11px sans-serif'; ctx.fillText('No usable thrust at this configuration',10,h/2); return; }
+  const maxT=ts[ts.length-1], maxDV=Math.max(target,Math.max(...dvs))*1.1;
+  const pad=28;
+  ctx.strokeStyle='#2a3344'; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){ const y=pad+(h-2*pad)*i/4; ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(w-8,y); ctx.stroke(); }
+  // target line
+  const yTarget=h-pad-(h-2*pad)*(target/maxDV);
+  ctx.strokeStyle='#ffb020'; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.moveTo(pad,yTarget); ctx.lineTo(w-8,yTarget); ctx.stroke(); ctx.setLineDash([]);
+  ctx.strokeStyle='#9d5cff'; ctx.lineWidth=2; ctx.beginPath();
+  dvs.forEach((v,i)=>{ const x=pad+(w-pad-8)*(ts[i]/maxT); const y=h-pad-(h-2*pad)*(v/maxDV);
+    if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+  ctx.stroke();
+  ctx.fillStyle='#8a94a6'; ctx.font='10px sans-serif';
+  ctx.fillText('0d',pad,h-8); ctx.fillText(maxT.toFixed(0)+'d',w-30,h-8);
+}
+
+function updateCost(propLoad,powerBudget){
+  const XE_RATE=150000;
+  const xeCost=propLoad*XE_RATE;
+  const ppuCost=Math.max(150000, powerBudget*800);
+  const thrusterHead=350000, cathode=120000, tank=90000, harness=60000;
+  const total=xeCost+ppuCost+thrusterHead+cathode+tank+harness;
+  const rows=[
+    ['Xenon propellant ('+propLoad.toFixed(1)+' kg)', xeCost],
+    ['Power processing unit (PPU, scaled to '+powerBudget.toFixed(0)+' W)', ppuCost],
+    ['Thruster head (discharge channel + magnets)', thrusterHead],
+    ['Hollow cathode + neutralizer', cathode],
+    ['High-pressure xenon tank + regulator', tank],
+    ['Harnessing + thermal hardware', harness],
+  ];
+  let html=''; rows.forEach(r=>{ html+=`<tr><td>${r[0]}</td><td>₹${r[1].toLocaleString('en-IN',{maximumFractionDigits:0})}</td></tr>`; });
+  html+=`<tr class="total"><td>Prototype/EM unit total</td><td>₹${total.toLocaleString('en-IN',{maximumFractionDigits:0})}</td></tr>`;
+  $('costtable').innerHTML=html;
+}
+
+simulate();
+</script>
+</body>
+</html>
